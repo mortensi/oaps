@@ -7,13 +7,14 @@ import numpy as np
 import os
 import re
 
+from img2vec_pytorch import Img2Vec
+from PIL import Image
 
-#model = SentenceTransformer('sentence-transformers/multi-qa-MiniLM-L6-cos-v1')
-#MODELSIZE = 384
+img2vec = Img2Vec(cuda=False, model='densenet')
+IMAGE_VECTOR_DIMENSION=1024
 model = SentenceTransformer('sentence-transformers/all-MiniLM-L12-v1')
 MODELSIZE = 384
-#model = SentenceTransformer('sentence-transformers/all-distilroberta-v1')
-#MODELSIZE = 768
+
 
 def get_db(decode=True):
     try:
@@ -27,11 +28,16 @@ def get_db(decode=True):
 
 def init():
     indexes = get_db().execute_command("FT._LIST")
-    if "oaps_idx" not in indexes:
+    if "oaps_txt_idx" not in indexes:
         index_def = IndexDefinition(prefix=["oaps:seq:"], index_type=IndexType.JSON)
         schema = (  TextField("$.sentence", as_name="sentence"),
                     VectorField("$.embedding", "HNSW", {"TYPE": "FLOAT32", "DIM": MODELSIZE, "DISTANCE_METRIC": "COSINE"}, as_name="embedding"))
-        get_db(False).ft('oaps_idx').create_index(schema, definition=index_def)
+        get_db(False).ft('oaps_txt_idx').create_index(schema, definition=index_def)
+
+    if "oaps_pic_idx" not in indexes:
+        index_def = IndexDefinition(prefix=["oaps:pic:"], index_type=IndexType.JSON)
+        schema = (  VectorField("$.embedding", "HNSW", {"TYPE": "FLOAT32", "DIM": IMAGE_VECTOR_DIMENSION, "DISTANCE_METRIC": "COSINE"}, as_name="embedding"))
+        get_db(False).ft('oaps_pic_idx').create_index(schema, definition=index_def)
 
 
 def get_embedding_as_vector(text):
@@ -40,6 +46,11 @@ def get_embedding_as_vector(text):
 
 def get_embedding_as_blob(text):
     return model.encode(text).astype(np.float32).tobytes()
+
+
+def get_image_embedding(facepath):
+    img = Image.open(facepath).convert('RGB')
+    return img2vec.get_vec(img).tolist()
 
 
 def index_document(pk, text):
@@ -69,8 +80,33 @@ def check_document(text, epsilon):
             
         p = {"vec": get_embedding_as_blob(txt_sentence), "radius": epsilon}
         
-        found = get_db(False).ft("oaps_idx").search(q, p).docs
+        found = get_db(False).ft("oaps_txt_idx").search(q, p).docs
         if len(found) > 0:
             res.append([x['id'] for x in found])
+
+    return res
+
+
+def index_image(pk, facepath):
+    pic = {
+        'embedding':face_image_vector
+    }
+    
+    get_db(False).json().set("oaps:pic:{}".format(pk), '$', pic)
+
+
+def check_image(facepath, epsilon):
+    res = []
+
+    q = Query("@embedding:[VECTOR_RANGE $radius $vec]=>{$YIELD_DISTANCE_AS: score}")\
+        .sort_by("score", asc=True)\
+        .return_field("score")\
+        .dialect(2)
+        
+    p = {"vec": get_image_embedding(facepath), "radius": epsilon}
+    
+    found = get_db(False).ft("oaps_pic_idx").search(q, p).docs
+    if len(found) > 0:
+        res.append([x['id'] for x in found])
 
     return res

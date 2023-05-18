@@ -47,9 +47,20 @@ def testCSV():
     print_res(res)
 
 
+def loadImages():
+
+
+
+def testImage():
+    
+
+
 init()
-loadCSV()
-testCSV()
+#loadCSV()
+#testCSV()
 #quickDemo()
+
+loadImages()
+testImage()
 
 
