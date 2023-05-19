@@ -1,0 +1,5 @@
+sentence_transformers
+img2vec_pytorch
+shortuuid
+pandas
+redis

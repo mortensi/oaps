@@ -31,7 +31,7 @@ def quickDemo():
 
 def loadCSV():
     cnt = 0
-    df = pd.read_csv("mortensi.csv", usecols = ['Content'])
+    df = pd.read_csv("data/mortensi.csv", usecols = ['Content'])
     for index, row in df.iterrows():
         index_document(create_pk(), row.values[0])
         cnt = cnt + 1
@@ -40,27 +40,36 @@ def loadCSV():
 
 
 def testCSV():
+    # includes plagiarized sentence
     res = check_document("Pasta alla carbonara is a characteristic dish of Lazio and more particularly of Rome, prepared with popular ingredients and with an intense flavour. Spaghetti alla puttanesca is an Italian pasta dish invented in Naples in the mid-20th century and made typically with tomatoes, olive oil, olives, anchovies, chili peppers, capers, and garlic—with vermicelli or spaghetti pasta. We are a bunch of people convinced that you have to pass through difficult, or better, impossible challenges to see an idea reach the production stage and possibly provide benefits.", EPSILON)
     print_res(res)
 
+    # does not include plagiarized sentence
     res = check_document("This is a technical document, it describes the SID sound chip of the Commodore 64. This post is about 8 bits computers, such as Commodore 64, ZX Spectrum and other home computers", EPSILON)
     print_res(res)
 
 
 def loadImages():
-
+    index_image(create_pk(), 'data/cup.jpg')
+    index_image(create_pk(), 'data/glass.jpg')
+    index_image(create_pk(), 'data/spoon.jpg')
 
 
 def testImage():
+    res = check_image('data/test.jpg', EPSILON)
+    print(res)
     
 
-
 init()
-#loadCSV()
-#testCSV()
-#quickDemo()
 
+print()
+print("*********** Find textual similarity ***********")
+loadCSV()
+testCSV()
+print()
+print("*********** Find visual similarity ***********")
 loadImages()
 testImage()
+
 
 
