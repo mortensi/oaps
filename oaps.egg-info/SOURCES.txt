@@ -1,7 +1,0 @@
-README.md
-setup.py
-oaps.egg-info/PKG-INFO
-oaps.egg-info/SOURCES.txt
-oaps.egg-info/dependency_links.txt
-oaps.egg-info/requires.txt
-oaps.egg-info/top_level.txt
